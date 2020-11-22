@@ -234,14 +234,6 @@ namespace sdk {
 		volatile int claim;
 	};
 
-	class Array
-	{
-	public:
-		char pad_0000[96]; //0x0000
-		int32_t num_statistics; //0x0060
-		char pad_0064[140]; //0x0064
-	}; //Size: 0x00F0
-
 	class c_minecraft_fieldholder
 	{
 	public:
