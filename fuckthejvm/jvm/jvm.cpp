@@ -29,6 +29,7 @@ sdk::c_instanceklass* sdk::find_klass(const char* name)
 
 			c_instanceklass* res = nullptr;
 
+			thread->get_environment()->ExceptionClear(); // clear classnotfound exception
 			thread->get_environment()->EnsureLocalCapacity(1); // make sure we can at least create 1 local reference
 			if (!thread->get_environment()->PushLocalFrame(1)) { //returns 0 if true, make sure we create space for 1 reference 
 				auto clazz = thread->get_environment()->FindClass(name);
@@ -38,6 +39,7 @@ sdk::c_instanceklass* sdk::find_klass(const char* name)
 				{
 					thread->get_environment()->ExceptionClear(); // clear classnotfound exception
 					thread->get_environment()->PopLocalFrame(nullptr); // pop local frame
+					c_jvmthread::set_thread(original_thread); // set the old thread as context again
 					thread = thread->next(); // continue
 					continue;
 				}
@@ -60,6 +62,41 @@ sdk::c_instanceklass* sdk::find_klass(const char* name)
 	}
 
 	return nullptr;
+}
+
+std::string sdk::to_str(c_symbol* symbol)
+{
+	if (symbol)
+		return std::string(symbol->text, symbol->length);
+
+	return "";
+}
+
+std::uint64_t sdk::find_offset(c_instanceklass* klass, std::string name, std::string sig) {
+	auto clazz = klass;
+	while (clazz) {
+		for (int i = 0; i < clazz->fields->length; ++i)
+		{
+			auto field_info = c_fieldinfo::from_field_array(clazz->fields, i);
+
+			if (!field_info)
+				continue;
+
+			auto name_and_sig_param = name + sig;
+			auto name_and_sig_field = sdk::to_str(field_info->name(clazz->constant_pool)) + sdk::to_str(field_info->sig(clazz->constant_pool));
+
+			if (name_and_sig_field.compare(name_and_sig_param) == 0)
+				return field_info->offset();
+		}
+
+		clazz = clazz->super;
+	}
+
+	return 0;
+}
+
+std::uint64_t sdk::find_offset(c_instanceklass* klass, c_symbol* name, c_symbol* sig) {
+	return sdk::find_offset(klass, sdk::to_str(name), sdk::to_str(sig));
 }
 
 HINSTANCE get_jvm() {

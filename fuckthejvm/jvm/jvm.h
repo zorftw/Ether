@@ -7,6 +7,7 @@
 #include <jni_md.h>
 
 #include <assert.h>
+#include <string>
 
 // Created with ReClass.NET 1.2 by KN4CK3R
 
@@ -19,6 +20,14 @@ namespace sdk {
 	struct c_vec3d {
 		double x, y, z;
 	};
+
+	inline static double distance(double x, double y) {
+		return sqrt(pow(x, 2) + pow(y, 2));
+	}
+
+	inline static double distance(double x1, double y1, double z1, double x2, double y2, double z2) {
+		return distance(y1 - y2, distance(x1 - x2, z1 - z2));
+	}
 
 	class c_nativemethod
 	{
@@ -52,6 +61,13 @@ namespace sdk {
 		}
 	}; //Size: 0x01F8
 
+	inline int extract_low_short_from_int(jint x) {
+		return x & 0xffff;
+	}
+
+	inline int extract_high_short_from_int(jint x) {
+		return (x >> 16) & 0xffff;
+	}
 
 	class c_symbol
 	{
@@ -110,12 +126,64 @@ namespace sdk {
 			return (intptr_t*)&base()[which];
 		}
 
+		jint* int_at_addr(int which)
+		{
+			return (jint*)&base()[which];
+		}
+
 		c_symbol* symbol_at(int which)
 		{
 			return *(c_symbol**)&base()[which];
 		}
 
+		jint name_and_type_at(int which) {
+			return *int_at_addr(which);
+		}
+
+		int signature_ref_index_at(int which_nt) {
+			jint ref_index = name_and_type_at(which_nt);
+			return extract_high_short_from_int(ref_index);
+		}
+
+		int name_ref_index_at(int which_nt) {
+			jint ref_index = name_and_type_at(which_nt);
+			return extract_low_short_from_int(ref_index);
+		}
+
+		int impl_klass_ref_index_at(int which) 
+		{
+			jint ref_idex = *int_at_addr(which);
+			return extract_low_short_from_int(ref_idex);
+		}
+
+		int impl_name_and_type_ref_index_at(int which)
+		{
+			jint ref_index = *int_at_addr(which);
+			return extract_high_short_from_int(ref_index);
+		}
+
+		int uncached_klass_ref_index_at(int which) { return impl_klass_ref_index_at(which); }
+		int uncached_name_and_type_ref_index_at(int which) { return impl_name_and_type_ref_index_at(which); }
+
 	}; //Size: 0x0065
+
+	// do something with this
+	class c_name_and_type {
+	private:
+		int name_idx, sig_idx;
+	public:
+		c_name_and_type(int name, int sig) : name_idx(name), sig_idx(sig) {}
+
+		c_symbol* get_name(c_constantpool* pool)
+		{
+			return pool->symbol_at(name_idx);
+		}
+
+		c_symbol* get_sig(c_constantpool* pool)
+		{
+			return pool->symbol_at(sig_idx);
+		}
+	};
 
 #define FIELDINFO_TAG_SIZE             2
 #define FIELDINFO_TAG_OFFSET           1 << 0
@@ -234,6 +302,12 @@ namespace sdk {
 		volatile int claim;
 	};
 
+	
+
+	std::string to_str(c_symbol* symbol);
+	std::uint64_t find_offset(c_instanceklass* klass, std::string name, std::string sig);
+	std::uint64_t find_offset(c_instanceklass* klass, c_symbol* name, c_symbol* sig);
+
 	class c_minecraft_fieldholder
 	{
 	public:
@@ -310,6 +384,38 @@ namespace sdk {
 		int16_t num_params; //0x002B
 		int16_t orig_method_idnum; //0x002D
 	};
+
+	class c_jvm_array
+	{
+	private:
+		char pad_0000[16]; //0x0000
+	public:
+		int32_t length; //0x0010
+		int32_t ptr_to_array; //0x0014
+
+		std::uint32_t get_array_offset() const {
+			return 0x10;
+		}
+
+		std::uint32_t get_at(int which) const {
+			if (which > length)
+				return 0;
+
+			auto addr_to_read = ptr_to_array + get_array_offset() + (which * sizeof(std::uint32_t));
+
+			return *reinterpret_cast<std::uint32_t*>(addr_to_read);
+		}
+
+		template <typename T>
+		T at(int which) const {
+			if (which > length)
+				return nullptr;
+
+			return reinterpret_cast<T>(get_at(which));
+		}
+
+	}; //Size: 0x0014
+
 
 	class N00000853
 	{

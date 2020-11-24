@@ -9,6 +9,7 @@
 #include <Psapi.h>
 #include <regex>
 #include <string>
+#include <mutex>
 
 // jvm related stuff
 #include "../jvm/jvm.h"

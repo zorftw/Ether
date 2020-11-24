@@ -1,50 +1,44 @@
 #include "includes.h"
 
+#include "../jvm/sdk/c_minecraft.h"
+
 void g::start()
 {
-	/* NOTE: This method is now overdue */
-	std::vector<uint8_t> bytecode_clickmd = { 0x2A, 0xB4, 0xCC, 0xCC, 0x9E, 0x00, 0x04, 0xB1, 0x2A, 0xB4, 0xCC };
-	auto click_constmethod = g::pattern_scan_method(bytecode_clickmd, "xx??xxxxxx?"); //0x38 is the size of the constmethod class
+	sdk::c_instanceklass* minecraft_klass;
+	while ((minecraft_klass = sdk::find_klass("bao")) == nullptr)
+		std::this_thread::sleep_for(std::chrono::seconds(5));
 
-	if (!click_constmethod)
+	while(true)
 	{
-		printf("Unable to parse constmethod...\n");
-		return;
-	}
+		static auto instance = std::make_unique<c_minecraft>(minecraft_klass);
 
-	auto test = sdk::find_klass("blk"); //player class
-
-	const auto dump_class = [](sdk::c_instanceklass* klass) {
-		printf("\n");
-		printf("Dumping klass: (0x%X)\n", klass);
-		for (int i = 0; i < klass->fields->length; ++i)
+		static std::once_flag flag;
+		if (instance->get_player())
 		{
-			auto field = klass->fields->at(i);
-
-			auto field_info = sdk::c_fieldinfo::from_field_array(klass->fields, i);
-
-			if (!field_info)
-				return;
-
-			auto name = field_info->name(klass->constant_pool);
-			auto sig = field_info->sig(klass->constant_pool);
-
-			if (!name)
-				return;
-
-			if (!sig)
-				return;
-
-			printf("Field %s(%s) (offset: 0x%X)\n", std::string(name->text, name->length).c_str(), std::string(sig->text, sig->length).c_str(), field_info->offset());
+			// initialization 
+			std::call_once(flag, [&]() {
+				auto klass = sdk::find_klass("blk"); // lol
+				c_entityliving::initialize(klass);
+			});
 		}
-		printf("\n");
-	};
 
-	sdk::c_instanceklass* clazz = test;
-	while (clazz) // dump EntityPlayerSP chain
-	{
-		dump_class(clazz);
-		clazz = clazz->super;
+		if (instance->get_world())
+		{
+			printf("World: 0x%X\n", instance->get_world());
+			if (instance->get_player())
+				printf("Player: 0x%X\n", instance->get_player());
+			auto player_list = instance->get_world()->get_players();
+
+			// iterate playerlist
+			for (int i = 0; i < player_list->length; ++i)
+			{
+				auto object = player_list->at<c_entityplayersp*>(i);
+				printf("(%d) %.2f %.2f %.2f\n", i, object->get_position().x, object->get_position().y, object->get_position().z);
+			}
+			printf("\n"); // spacing
+		}
+
+		std::this_thread::sleep_for(std::chrono::seconds(10));
 	}
 }
 

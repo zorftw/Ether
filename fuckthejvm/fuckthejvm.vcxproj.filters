@@ -27,6 +27,15 @@
     <ClInclude Include="jvm\sdk\c_entityplayersp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jvm\sdk\c_world.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\sdk\c_entityliving.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jvm\sdk\c_identifyable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="entry.cpp">
@@ -38,5 +47,8 @@
     <ClCompile Include="jvm\jvm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
   </ItemGroup>
 </Project>

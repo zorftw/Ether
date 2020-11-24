@@ -160,13 +160,19 @@
   <ItemGroup>
     <ClInclude Include="gasper\includes.h" />
     <ClInclude Include="jvm\jvm.h" />
+    <ClInclude Include="jvm\sdk\c_entityliving.h" />
     <ClInclude Include="jvm\sdk\c_entityplayersp.h" />
+    <ClInclude Include="jvm\sdk\c_identifyable.h" />
     <ClInclude Include="jvm\sdk\c_minecraft.h" />
+    <ClInclude Include="jvm\sdk\c_world.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="entry.cpp" />
     <ClCompile Include="gasper\gasper.cpp" />
     <ClCompile Include="jvm\jvm.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
